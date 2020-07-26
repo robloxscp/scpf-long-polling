@@ -2,19 +2,29 @@ const REQUEST_VALITDITY_TIME = 55 * 1000; // 60s for game servers, none for stud
 
 const EventEmitter = require("events");
 
-const { performance } = require("perf_hooks");
+const {
+	performance
+} = require("perf_hooks");
 const uuid = require("uuid");
 
 class Connection extends EventEmitter {
-	constructor() {
+	constructor(req, res) {
 		super();
 
-		this.id = uuid();
+		if (!req.headers.apikey)
+			this.id = "NOAPIKEY";
+		else
+			this.id = uuid();
+
+		this.apikey = req.headers.apikey
 		this._queue = [];
 	}
 
 	send(target, data) {
-		this._queue.push({ t: target, d: data });
+		this._queue.push({
+			t: target,
+			d: data
+		});
 		this._emptyQueue();
 	}
 

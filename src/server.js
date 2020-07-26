@@ -15,11 +15,13 @@ class LongPollingServer extends EventEmitter {
 		// Connect
 
 		server.get("/connect", (req, res) => {
-			var connection = new Connection();
+			var connection = new Connection(req);
 			this.connections[connection.id] = connection;
-			this.emit("connection", connection);
+			this.emit("connection", connection, req);
 
-			res.status(201).send({ id: connection.id });
+			res.status(201).send({
+				id: connection.id
+			});
 		});
 
 		server.use((req, res, next) => { // Authentication middleware
@@ -28,7 +30,9 @@ class LongPollingServer extends EventEmitter {
 				req.connection = connection;
 				next();
 			} else {
-				res.status(401).send({ error: "Not connected" });
+				res.status(401).send({
+					error: "Not connected"
+				});
 			}
 		});
 
@@ -50,7 +54,9 @@ class LongPollingServer extends EventEmitter {
 				req.connection.emit(req.body.t, req.body.d);
 				res.status(200).send("ok");
 			} else {
-				res.status(400).send({ error: "Invalid target" });
+				res.status(400).send({
+					error: "Invalid target"
+				});
 			}
 		});
 
@@ -61,6 +67,15 @@ class LongPollingServer extends EventEmitter {
 		Object.keys(this.connections).forEach((id) => {
 			this.connections[id].send(target, data);
 		});
+	}
+
+	broadcastToApiKey(key, target, data) {
+		Object.keys(this.connections).forEach((id) => {
+			var parsedKey = this.connections[id].apikey
+			if (parsedKey === key) {
+				this.connections[id].send(target, data);
+			}
+		})
 	}
 
 	listen(...args) {
